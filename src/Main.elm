@@ -1,30 +1,36 @@
 module Main exposing (main)
 
 import Browser
-import HelloWorld exposing (helloWorld)
-import Html exposing (Html, div, img)
-import Html.Attributes exposing (src, style)
-import Msg exposing (Msg(..))
+import Css
+import Html.Styled exposing (..)
+import Html.Styled.Events exposing (..)
+import Html.Styled.Attributes exposing (..)
 
+type Msg = UpdateNewTodo String | SubmitTodo | RemoveTodo Int
+type alias Model = { newTodo : String, todos: List Todo }
+type alias Todo = { task : String, completed : Bool, id : Int }
 
-main : Program () Int Msg
+main : Program () Model Msg
 main =
-    Browser.sandbox { init = 0, update = update, view = view }
+    Browser.sandbox { init = { newTodo = "Greet the chat", todos = []}, update = update, view = view >> Html.Styled.toUnstyled }
 
 
-update : Msg -> number -> number
+update : Msg -> Model -> Model
 update msg model =
     case msg of
-        Increment ->
-            model + 1
-
-        Decrement ->
-            model - 1
+        UpdateNewTodo todo -> { model | newTodo = todo }
+        SubmitTodo -> { model | todos = (model.todos ++ [ { task = model.newTodo, completed = False, id = List.length model.todos } ]), newTodo = "" }
+        RemoveTodo id -> { model | todos = (List.filter (.id >> (/=) id) model.todos) }
 
 
-view : Int -> Html Msg
+
+view : Model -> Html Msg
 view model =
-    div []
-        [ img [ src "/logo.png", style "width" "300px" ] []
-        , helloWorld model
+    div [ css [Css.maxWidth (Css.ch 40) ] ]
+        [ 
+            ul [] (List.map (\todo -> li [] [ text todo.task, button [onClick (RemoveTodo todo.id)] [text "yeet"] ]) model.todos)
+            ,Html.Styled.form [ onSubmit SubmitTodo ] [
+                input [value model.newTodo, onInput UpdateNewTodo] []
+                ,button [ type_ "submit" ] [ text "Submit" ]
+                ]
         ]
